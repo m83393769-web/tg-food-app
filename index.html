@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Bistro App</title>
+  <!-- Подключаем SDK Telegram -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Подключаем Tailwind CSS для быстрой стилизации -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: var(--tg-theme-bg-color, #f8fafc);
+      color: var(--tg-theme-text-color, #0f172a);
+    }
+  </style>
+</head>
+<body class="pb-28 antialiased selection:bg-none">
+
+  <!-- Шапка сайта -->
+  <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 py-3 shadow-sm">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-black tracking-tight text-slate-900">BISTRO & BURGER</h1>
+        <p class="text-xs text-emerald-600 font-medium flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Принимаем заказы
+        </p>
+      </div>
+      <span class="text-2xl">🍔</span>
+    </div>
+  </header>
+
+  <!-- Сетка товаров -->
+  <main class="p-4 grid grid-cols-2 gap-3" id="products-container">
+    <!-- Товары генерятся через JavaScript -->
+  </main>
+
+  <!-- Нижняя плашка (Корзина) -->
+  <div id="cart-bar" class="fixed bottom-4 left-4 right-4 z-40 transform translate-y-32 opacity-0 transition-all duration-300 pointer-events-none">
+    <button onclick="openModal()" class="w-full bg-slate-900 text-white p-4 rounded-2xl flex justify-between items-center shadow-xl shadow-slate-900/20 active:scale-95 transition-transform">
+      <div class="flex items-center gap-2">
+        <span class="bg-white/20 px-2.5 py-1 rounded-full text-xs font-bold" id="cart-count">0 шт</span>
+        <span class="font-bold text-sm">Корзина</span>
+      </div>
+      <span class="font-extrabold text-base" id="cart-total">0 ₽</span>
+    </button>
+  </div>
+
+  <!-- Окно оформления заказа -->
+  <div id="checkout-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-lg font-bold text-slate-900">Оформление</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Где будете есть?</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="setOrderType('dine-in')" id="btn-dine-in" class="py-2.5 text-sm font-semibold rounded-xl border border-slate-900 bg-slate-900 text-white transition-all">
+            🍽 В заведении
+          </button>
+          <button type="button" onclick="setOrderType('delivery')" id="btn-delivery" class="py-2.5 text-sm font-semibold rounded-xl border border-slate-200 text-slate-600 transition-all">
+            🛵 Доставка
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Телефон</label>
+          <input type="tel" id="user-phone" placeholder="+7 (999) 000-00-00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-slate-900">
+        </div>
+        <div id="address-block" class="hidden">
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Адрес доставки</label>
+          <input type="text" id="user-address" placeholder="Улица, дом, кв" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-slate-900">
+        </div>
+      </div>
+
+      <div class="pt-2 border-t mt-2">
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-sm font-medium text-slate-500">Сумма:</span>
+          <span class="text-xl font-black text-slate-900" id="modal-total">0 ₽</span>
+        </div>
+        <button onclick="submitOrder()" class="w-full bg-emerald-500 active:scale-95 transition-all text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/25">
+          Заказать
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    const haptic = (type = 'light') => {
+      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(type);
+    };
+
+    const products = [
+      { id: 1, name: "Чизбургер Deluxe", price: 450, img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80" },
+      { id: 2, name: "Пицца Пепперони", price: 690, img: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=500&q=80" },
+      { id: 3, name: "Паста Карбонара", price: 520, img: "https://images.unsplash.com/photo-1612874742237-6526221588e3?w=500&q=80" },
+      { id: 4, name: "Цезарь с креветкой", price: 480, img: "https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=500&q=80" }
+    ];
+
+    const cart = {};
+    let orderType = 'dine-in';
+
+    const container = document.getElementById('products-container');
+    function renderProducts() {
+      container.innerHTML = products.map(p => {
+        const count = cart[p.id] || 0;
+        return `
+          <div class="bg-white rounded-2xl overflow-hidden border border-slate-100 flex flex-col justify-between shadow-sm">
+            <img src="${p.img}" alt="${p.name}" class="w-full h-28 object-cover">
+            <div class="p-3 flex flex-col flex-grow justify-between">
+              <div>
+                <h4 class="font-bold text-slate-800 text-xs truncate">${p.name}</h4>
+                <p class="text-sm font-black text-slate-900 mt-1">${p.price} ₽</p>
+              </div>
+              <div class="mt-3">
+                ${count === 0 
+                  ? `<button onclick="changeCount(${p.id}, 1)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold py-1.5 rounded-xl text-xs active:scale-95 transition-all">+ Добавить</button>`
+                  : `<div class="flex items-center justify-between bg-slate-100 rounded-xl p-0.5">
+                      <button onclick="changeCount(${p.id}, -1)" class="w-7 h-7 bg-white rounded-lg font-bold text-slate-800 shadow-sm active:scale-90">-</button>
+                      <span class="text-xs font-bold">${count}</span>
+                      <button onclick="changeCount(${p.id}, 1)" class="w-7 h-7 bg-white rounded-lg font-bold text-slate-800 shadow-sm active:scale-90">+</button>
+                    </div>`
+                }
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function changeCount(id, delta) {
+      haptic('light');
+      cart[id] = (cart[id] || 0) + delta;
+      if (cart[id] <= 0) delete cart[id];
+      renderProducts();
+      updateCartBar();
+    }
+
+    function updateCartBar() {
+      const totalCount = Object.values(cart).reduce((a, b) => a + b, 0);
+      const totalPrice = Object.entries(cart).reduce((sum, [id, count]) => {
+        const item = products.find(p => p.id == id);
+        return sum + (item.price * count);
+      }, 0);
+
+      const bar = document.getElementById('cart-bar');
+      if (totalCount > 0) {
+        bar.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
+        document.getElementById('cart-count').innerText = `${totalCount} шт`;
+        document.getElementById('cart-total').innerText = `${totalPrice} ₽`;
+        document.getElementById('modal-total').innerText = `${totalPrice} ₽`;
+      } else {
+        bar.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
+        closeModal();
+      }
+    }
+
+    function openModal() {
+      haptic('medium');
+      document.getElementById('checkout-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('checkout-modal').classList.add('hidden');
+    }
+
+    function setOrderType(type) {
+      haptic('selection');
+      orderType = type;
+      const btnDine = document.getElementById('btn-dine-in');
+      const btnDelivery = document.getElementById('btn-delivery');
+      const addressBlock = document.getElementById('address-block');
+
+      if (type === 'dine-in') {
+        btnDine.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-900 bg-slate-900 text-white transition-all";
+        btnDelivery.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-200 text-slate-600 transition-all";
+        addressBlock.classList.add('hidden');
+      } else {
+        btnDelivery.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-900 bg-slate-900 text-white transition-all";
+        btnDine.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-200 text-slate-600 transition-all";
+        addressBlock.classList.remove('hidden');
+      }
+    }
+
+    function submitOrder() {
+      const phone = document.getElementById('user-phone').value.trim();
+      const address = document.getElementById('user-address').value.trim();
+
+      if (!phone) {
+        alert('Укажите номер телефона!');
+        return;
+      }
+      if (orderType === 'delivery' && !address) {
+        alert('Укажите адрес доставки!');
+        return;
+      }
+
+      const orderItems = Object.entries(cart).map(([id, count]) => {
+        const prod = products.find(p => p.id == id);
+        return { name: prod.name, count, price: prod.price * count };
+      });
+
+      const orderPayload = {
+        type: orderType === 'dine-in' ? 'В заведении' : 'Доставка',
+        phone,
+        address: orderType === 'delivery' ? address : null,
+        items: orderItems,
+        total: Object.entries(cart).reduce((s, [id, c]) => s + (products.find(p => p.id == id).price * c), 0)
+      };
+
+      haptic('success');
+
+      if (tg && tg.sendData) {
+        tg.sendData(JSON.stringify(orderPayload));
+      } else {
+        alert("Заказ оформлен (эмуляция вне Telegram):\n" + JSON.stringify(orderPayload, null, 2));
+      }
+    }
+
+    renderProducts();
+  </script>
+</body>
+</html>
