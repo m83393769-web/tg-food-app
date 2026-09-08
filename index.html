@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Bistro App</title>
-  <!-- Подключаем SDK Telegram -->
+  <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Подключаем Tailwind CSS для быстрой стилизации -->
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { -webkit-tap-highlight-color: transparent; }
@@ -18,7 +18,7 @@
 </head>
 <body class="pb-28 antialiased selection:bg-none">
 
-  <!-- Шапка сайта -->
+  <!-- Шапка ресторана -->
   <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 py-3 shadow-sm">
     <div class="flex items-center justify-between">
       <div>
@@ -33,12 +33,12 @@
 
   <!-- Сетка товаров -->
   <main class="p-4 grid grid-cols-2 gap-3" id="products-container">
-    <!-- Товары генерятся через JavaScript -->
+    <!-- Товары рендерятся из JS -->
   </main>
 
-  <!-- Нижняя плашка (Корзина) -->
+  <!-- Плавающая плашка снизу (Корзина) -->
   <div id="cart-bar" class="fixed bottom-4 left-4 right-4 z-40 transform translate-y-32 opacity-0 transition-all duration-300 pointer-events-none">
-    <button onclick="openModal()" class="w-full bg-slate-900 text-white p-4 rounded-2xl flex justify-between items-center shadow-xl shadow-slate-900/20 active:scale-95 transition-transform">
+    <button type="button" onclick="openModal()" class="w-full bg-slate-900 text-white p-4 rounded-2xl flex justify-between items-center shadow-xl shadow-slate-900/20 active:scale-95 transition-transform">
       <div class="flex items-center gap-2">
         <span class="bg-white/20 px-2.5 py-1 rounded-full text-xs font-bold" id="cart-count">0 шт</span>
         <span class="font-bold text-sm">Корзина</span>
@@ -47,72 +47,68 @@
     </button>
   </div>
 
-  <!-- Окно оформления заказа -->
+  <!-- Модальное окно оформления -->
   <div id="checkout-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
       <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="text-lg font-bold text-slate-900">Оформление</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
+        <h3 class="text-lg font-bold text-slate-900">Оформление заказа</h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
       </div>
 
+      <!-- Переключатель типа заказа -->
       <div>
         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Где будете есть?</label>
         <div class="grid grid-cols-2 gap-2">
-          <button type="button" onclick="setOrderType('dine-in')" id="btn-dine-in" class="py-2.5 text-sm font-semibold rounded-xl border border-slate-900 bg-slate-900 text-white transition-all">
+          <button type="button" id="btn-dine-in" onclick="selectOrderType('dine-in')" style="background-color: #0f172a; color: #ffffff;" class="py-2.5 text-sm font-semibold rounded-xl border border-slate-900 transition-all active:scale-95">
             🍽 В заведении
           </button>
-          <button type="button" onclick="setOrderType('delivery')" id="btn-delivery" class="py-2.5 text-sm font-semibold rounded-xl border border-slate-200 text-slate-600 transition-all">
+          <button type="button" id="btn-delivery" onclick="selectOrderType('delivery')" style="background-color: #ffffff; color: #475569;" class="py-2.5 text-sm font-semibold rounded-xl border border-slate-200 transition-all active:scale-95">
             🛵 Доставка
           </button>
         </div>
       </div>
 
+      <!-- Поля ввода -->
       <div class="space-y-3">
         <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Телефон</label>
           <input type="tel" id="user-phone" placeholder="+7 (999) 000-00-00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-slate-900">
         </div>
-        <div id="address-block" class="hidden">
+        <div id="address-block" style="display: none;">
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Адрес доставки</label>
           <input type="text" id="user-address" placeholder="Улица, дом, кв" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-slate-900">
         </div>
       </div>
 
+      <!-- Итог и кнопка -->
       <div class="pt-2 border-t mt-2">
         <div class="flex justify-between items-center mb-4">
           <span class="text-sm font-medium text-slate-500">Сумма:</span>
           <span class="text-xl font-black text-slate-900" id="modal-total">0 ₽</span>
         </div>
-        <button onclick="submitOrder()" class="w-full bg-emerald-500 active:scale-95 transition-all text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/25">
-          Заказать
+        <button type="button" onclick="submitOrder()" class="w-full bg-emerald-500 active:scale-95 transition-all text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/25">
+          Подтвердить заказ
         </button>
       </div>
     </div>
   </div>
 
   <script>
+    // 1. Инициализация Telegram SDK
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();
     }
 
-    // Надежная вибрация без вылетов
-    const haptic = (type = 'light') => {
+    // Безопасная вибрация (никогда не ломает интерфейс)
+    const haptic = () => {
       try {
-        if (!tg?.HapticFeedback) return;
-        if (type === 'selection') {
-          tg.HapticFeedback.selectionChanged();
-        } else if (type === 'success' || type === 'error') {
-          tg.HapticFeedback.notificationOccurred(type);
-        } else {
-          tg.HapticFeedback.impactOccurred(type);
-        }
-      } catch (e) {
-        console.log(e);
-      }
+        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      } catch (e) {}
     };
 
+    // 2. Список блюд
     const products = [
       { id: 1, name: "Чизбургер Deluxe", price: 450, img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80" },
       { id: 2, name: "Пицца Пепперони", price: 690, img: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=500&q=80" },
@@ -120,9 +116,10 @@
       { id: 4, name: "Цезарь с креветкой", price: 480, img: "https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=500&q=80" }
     ];
 
-    const cart = {};
+    let cart = {};
     let orderType = 'dine-in';
 
+    // 3. Вывод карточек на экран
     const container = document.getElementById('products-container');
     function renderProducts() {
       container.innerHTML = products.map(p => {
@@ -137,11 +134,11 @@
               </div>
               <div class="mt-3">
                 ${count === 0 
-                  ? `<button onclick="changeCount(${p.id}, 1)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold py-1.5 rounded-xl text-xs active:scale-95 transition-all">+ Добавить</button>`
+                  ? `<button type="button" onclick="changeCount(${p.id}, 1)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold py-1.5 rounded-xl text-xs active:scale-95 transition-all">+ Добавить</button>`
                   : `<div class="flex items-center justify-between bg-slate-100 rounded-xl p-0.5">
-                      <button onclick="changeCount(${p.id}, -1)" class="w-7 h-7 bg-white rounded-lg font-bold text-slate-800 shadow-sm active:scale-90">-</button>
+                      <button type="button" onclick="changeCount(${p.id}, -1)" class="w-7 h-7 bg-white rounded-lg font-bold text-slate-800 shadow-sm active:scale-90">-</button>
                       <span class="text-xs font-bold">${count}</span>
-                      <button onclick="changeCount(${p.id}, 1)" class="w-7 h-7 bg-white rounded-lg font-bold text-slate-800 shadow-sm active:scale-90">+</button>
+                      <button type="button" onclick="changeCount(${p.id}, 1)" class="w-7 h-7 bg-white rounded-lg font-bold text-slate-800 shadow-sm active:scale-90">+</button>
                     </div>`
                 }
               </div>
@@ -151,14 +148,16 @@
       }).join('');
     }
 
+    // 4. Добавление / удаление
     function changeCount(id, delta) {
-      haptic('light');
+      haptic();
       cart[id] = (cart[id] || 0) + delta;
       if (cart[id] <= 0) delete cart[id];
       renderProducts();
       updateCartBar();
     }
 
+    // 5. Нижняя плашка
     function updateCartBar() {
       const totalCount = Object.values(cart).reduce((a, b) => a + b, 0);
       const totalPrice = Object.entries(cart).reduce((sum, [id, count]) => {
@@ -178,8 +177,9 @@
       }
     }
 
+    // 6. Модалка
     function openModal() {
-      haptic('medium');
+      haptic();
       document.getElementById('checkout-modal').classList.remove('hidden');
     }
 
@@ -187,35 +187,49 @@
       document.getElementById('checkout-modal').classList.add('hidden');
     }
 
-    function setOrderType(type) {
-      haptic('selection');
+    // 7. ЖЕЛЕЗОБЕТОННЫЙ переключатель: Заведение / Доставка
+    function selectOrderType(type) {
+      haptic();
       orderType = type;
       
       const btnDine = document.getElementById('btn-dine-in');
-      const btnDelivery = document.getElementById('btn-delivery');
-      const addressBlock = document.getElementById('address-block');
+      const btnDel = document.getElementById('btn-delivery');
+      const addrBlock = document.getElementById('address-block');
 
-      if (type === 'dine-in') {
-        btnDine.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-900 bg-slate-900 text-white transition-all";
-        btnDelivery.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-200 text-slate-600 bg-transparent transition-all";
-        addressBlock.classList.add('hidden');
+      if (type === 'delivery') {
+        btnDel.style.backgroundColor = '#0f172a';
+        btnDel.style.color = '#ffffff';
+        btnDel.style.borderColor = '#0f172a';
+
+        btnDine.style.backgroundColor = '#ffffff';
+        btnDine.style.color = '#475569';
+        btnDine.style.borderColor = '#e2e8f0';
+
+        addrBlock.style.display = 'block';
       } else {
-        btnDelivery.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-900 bg-slate-900 text-white transition-all";
-        btnDine.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-200 text-slate-600 bg-transparent transition-all";
-        addressBlock.classList.remove('hidden');
+        btnDine.style.backgroundColor = '#0f172a';
+        btnDine.style.color = '#ffffff';
+        btnDine.style.borderColor = '#0f172a';
+
+        btnDel.style.backgroundColor = '#ffffff';
+        btnDel.style.color = '#475569';
+        btnDel.style.borderColor = '#e2e8f0';
+
+        addrBlock.style.display = 'none';
       }
     }
 
+    // 8. Отправка заказа
     function submitOrder() {
       const phone = document.getElementById('user-phone').value.trim();
       const address = document.getElementById('user-address').value.trim();
 
       if (!phone) {
-        alert('Укажите номер телефона!');
+        alert('Пожалуйста, введите телефон');
         return;
       }
       if (orderType === 'delivery' && !address) {
-        alert('Укажите адрес доставки!');
+        alert('Пожалуйста, введите адрес доставки');
         return;
       }
 
@@ -224,23 +238,26 @@
         return { name: prod.name, count, price: prod.price * count };
       });
 
+      const totalPrice = orderItems.reduce((acc, it) => acc + it.price, 0);
+
       const orderPayload = {
-        type: orderType === 'dine-in' ? 'В заведении' : 'Доставка',
-        phone,
+        type: orderType === 'delivery' ? 'Доставка' : 'В заведении',
+        phone: phone,
         address: orderType === 'delivery' ? address : null,
         items: orderItems,
-        total: Object.entries(cart).reduce((s, [id, c]) => s + (products.find(p => p.id == id).price * c), 0)
+        total: totalPrice
       };
 
-      haptic('success');
+      haptic();
 
       if (tg && tg.sendData) {
         tg.sendData(JSON.stringify(orderPayload));
       } else {
-        alert("Заказ оформлен (эмуляция вне Telegram):\n" + JSON.stringify(orderPayload, null, 2));
+        alert("Заказ оформлен:\n" + JSON.stringify(orderPayload, null, 2));
       }
     }
 
+    // Стартовый рендер
     renderProducts();
   </script>
 </body>
