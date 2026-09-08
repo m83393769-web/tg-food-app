@@ -4,20 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Bistro App</title>
-  <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { 
       -webkit-tap-highlight-color: transparent; 
-      touch-action: manipulation; /* Убирает 300мс задержку тапа на смартфонах */
+      touch-action: manipulation;
     }
     body {
       background-color: var(--tg-theme-bg-color, #f8fafc);
       color: var(--tg-theme-text-color, #0f172a);
     }
-    /* Стили для нативных табов */
     .tab-radio:checked + label {
       background-color: #0f172a !important;
       color: #ffffff !important;
@@ -33,7 +30,7 @@
       <div>
         <h1 class="text-lg font-black tracking-tight text-slate-900">BISTRO & BURGER</h1>
         <p class="text-xs text-emerald-600 font-medium flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Принимаем заказы
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Принимаем заказы 24/7
         </p>
       </div>
       <span class="text-2xl">🍔</span>
@@ -42,10 +39,10 @@
 
   <!-- Сетка блюд -->
   <main class="p-4 grid grid-cols-2 gap-3" id="products-container">
-    <!-- Товары генерятся через JS -->
+    <!-- Товары из JS -->
   </main>
 
-  <!-- Нижняя кнопка «Корзина» -->
+  <!-- Нижняя плашка «Корзина» -->
   <div id="cart-bar" class="fixed bottom-4 left-4 right-4 z-40 transform translate-y-32 opacity-0 transition-all duration-300 pointer-events-none">
     <button type="button" onclick="openModal()" class="w-full bg-slate-900 text-white p-4 rounded-2xl flex justify-between items-center shadow-xl active:scale-95 transition-transform">
       <div class="flex items-center gap-2">
@@ -56,7 +53,7 @@
     </button>
   </div>
 
-  <!-- Модалка оформления (БЕЗ глючного backdrop-blur, чистый темный оверлей) -->
+  <!-- Модалка оформления заказа -->
   <div id="checkout-modal" class="fixed inset-0 z-50 bg-black/70 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
       
@@ -65,31 +62,26 @@
         <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none">✕</button>
       </div>
 
-      <!-- Нативный переключатель (Radio Buttons под видом кнопок) -->
+      <!-- Переключатель типа заказа -->
       <div>
         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Где будете кушать?</label>
         <div class="grid grid-cols-2 gap-2">
-          
-          <!-- Вариант 1: В заведении -->
           <div>
-            <input type="radio" id="type-dine" name="order_type" value="dine-in" class="tab-radio hidden" checked onchange="toggleOrderType()">
+            <input type="radio" id="type-dine" name="order_type" value="В заведении" class="tab-radio hidden" checked onchange="toggleOrderType()">
             <label for="type-dine" class="flex items-center justify-center py-3 text-sm font-semibold rounded-xl border border-slate-200 bg-white text-slate-600 select-none cursor-pointer transition-colors">
               🍽 В заведении
             </label>
           </div>
-
-          <!-- Вариант 2: Доставка -->
           <div>
-            <input type="radio" id="type-delivery" name="order_type" value="delivery" class="tab-radio hidden" onchange="toggleOrderType()">
+            <input type="radio" id="type-delivery" name="order_type" value="Доставка" class="tab-radio hidden" onchange="toggleOrderType()">
             <label for="type-delivery" class="flex items-center justify-center py-3 text-sm font-semibold rounded-xl border border-slate-200 bg-white text-slate-600 select-none cursor-pointer transition-colors">
               🛵 Доставка
             </label>
           </div>
-
         </div>
       </div>
 
-      <!-- Инпуты -->
+      <!-- Поля ввода -->
       <div class="space-y-3">
         <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Номер телефона</label>
@@ -101,14 +93,14 @@
         </div>
       </div>
 
-      <!-- Итоговая кнопка -->
+      <!-- Кнопка «Заказать» -->
       <div class="pt-2 border-t mt-2">
         <div class="flex justify-between items-center mb-4">
           <span class="text-sm font-medium text-slate-500">К оплате:</span>
           <span class="text-xl font-black text-slate-900" id="modal-total">0 ₽</span>
         </div>
-        <button type="button" onclick="submitOrder()" class="w-full bg-emerald-500 active:scale-95 transition-transform text-white font-bold py-3.5 rounded-xl shadow-lg">
-          Заказать
+        <button type="button" id="submit-btn" onclick="submitOrderDirect()" class="w-full bg-emerald-500 active:scale-95 transition-transform text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2">
+          <span>Подтвердить заказ</span>
         </button>
       </div>
 
@@ -116,6 +108,13 @@
   </div>
 
   <script>
+    // ==========================================
+    // НАСТРОЙКИ: ВСТАВЬ СВОИ ДАННЫЕ СЮДА
+    // ==========================================
+    const BOT_TOKEN = "8901875963:AAGc25SFjPsnxlLzdVtieyJ_pAZwy1SVj0s";
+    const ADMIN_CHAT_ID = "837351659";
+    // ==========================================
+
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
@@ -201,16 +200,16 @@
       document.getElementById('checkout-modal').classList.add('hidden');
     }
 
-    // Системное переключение поля адреса
     function toggleOrderType() {
       haptic();
       const isDelivery = document.getElementById('type-delivery').checked;
-      const addrBlock = document.getElementById('address-block');
-      addrBlock.style.display = isDelivery ? 'block' : 'none';
+      document.getElementById('address-block').style.display = isDelivery ? 'block' : 'none';
     }
 
-    function submitOrder() {
+    // ОТПРАВКА НАПРЯМУЮ В TELEGRAM API (БЕЗ ПИТОНА)
+    async function submitOrderDirect() {
       const isDelivery = document.getElementById('type-delivery').checked;
+      const orderType = isDelivery ? '🛵 Доставка' : '🍽 В заведении';
       const phone = document.getElementById('user-phone').value.trim();
       const address = document.getElementById('user-address').value.trim();
 
@@ -223,25 +222,81 @@
         return;
       }
 
-      const orderItems = Object.entries(cart).map(([id, count]) => {
+      const btn = document.getElementById('submit-btn');
+      btn.innerText = 'Отправка...';
+      btn.disabled = true;
+
+      // Формируем позиции
+      let itemsText = '';
+      let total = 0;
+      Object.entries(cart).forEach(([id, count]) => {
         const prod = products.find(p => p.id == id);
-        return { name: prod.name, count, price: prod.price * count };
+        const cost = prod.price * count;
+        total += cost;
+        itemsText += `▫️ ${prod.name} x${count} = ${cost} ₽\n`;
       });
 
-      const orderPayload = {
-        type: isDelivery ? 'Доставка' : 'В заведении',
-        phone: phone,
-        address: isDelivery ? address : null,
-        items: orderItems,
-        total: orderItems.reduce((acc, it) => acc + it.price, 0)
-      };
+      // Чек для клиента
+      const clientMessage = 
+        `🎉 *Ваш заказ успешно оформлен!*\n\n` +
+        `📋 *Тип:* ${orderType}\n` +
+        `📞 *Телефон:* ${phone}\n` +
+        (isDelivery ? `📍 *Адрес:* ${address}\n` : '') +
+        `\n🛒 *Состав:*\n${itemsText}\n` +
+        `💰 *Итого: ${total} ₽*\n\n` +
+        `👨‍🍳 Уже готовим! Скоро свяжемся с вами.`;
 
-      haptic();
+      // Чек для кухни / админа ресторана
+      const adminMessage = 
+        `🔔 *НОВЫЙ ЗАКАЗ!*\n\n` +
+        `👤 *Клиент:* @${tg?.initDataUnsafe?.user?.username || 'Без юзернейма'}\n` +
+        `📋 *Тип:* ${orderType}\n` +
+        `📞 *Телефон:* ${phone}\n` +
+        (isDelivery ? `📍 *Адрес:* ${address}\n` : '') +
+        `\n🛒 *Позиции:*\n${itemsText}\n` +
+        `💰 *Сумма: ${total} ₽*`;
 
-      if (tg && tg.sendData) {
-        tg.sendData(JSON.stringify(orderPayload));
-      } else {
-        alert("Заказ отправлен:\n" + JSON.stringify(orderPayload, null, 2));
+      try {
+        const userId = tg?.initDataUnsafe?.user?.id;
+
+        // 1. Отправляем чек покупателю (если открыто в телеге)
+        if (userId) {
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: userId,
+              text: clientMessage,
+              parse_mode: 'Markdown'
+            })
+          });
+        }
+
+        // 2. Отправляем уведомление владельцу ресторана
+        if (ADMIN_CHAT_ID && !ADMIN_CHAT_ID.includes('СЮДА_ВСТАВЬ')) {
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: ADMIN_CHAT_ID,
+              text: adminMessage,
+              parse_mode: 'Markdown'
+            })
+          });
+        }
+
+        haptic();
+        // Закрываем мини-апп
+        if (tg && tg.close) {
+          tg.close();
+        } else {
+          alert('Заказ отправлен!');
+        }
+
+      } catch (err) {
+        alert('Ошибка отправки: ' + err.message);
+        btn.innerText = 'Подтвердить заказ';
+        btn.disabled = false;
       }
     }
 
