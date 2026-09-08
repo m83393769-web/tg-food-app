@@ -97,8 +97,20 @@
       tg.expand();
     }
 
+    // Надежная вибрация без вылетов
     const haptic = (type = 'light') => {
-      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(type);
+      try {
+        if (!tg?.HapticFeedback) return;
+        if (type === 'selection') {
+          tg.HapticFeedback.selectionChanged();
+        } else if (type === 'success' || type === 'error') {
+          tg.HapticFeedback.notificationOccurred(type);
+        } else {
+          tg.HapticFeedback.impactOccurred(type);
+        }
+      } catch (e) {
+        console.log(e);
+      }
     };
 
     const products = [
@@ -178,17 +190,18 @@
     function setOrderType(type) {
       haptic('selection');
       orderType = type;
+      
       const btnDine = document.getElementById('btn-dine-in');
       const btnDelivery = document.getElementById('btn-delivery');
       const addressBlock = document.getElementById('address-block');
 
       if (type === 'dine-in') {
         btnDine.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-900 bg-slate-900 text-white transition-all";
-        btnDelivery.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-200 text-slate-600 transition-all";
+        btnDelivery.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-200 text-slate-600 bg-transparent transition-all";
         addressBlock.classList.add('hidden');
       } else {
         btnDelivery.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-900 bg-slate-900 text-white transition-all";
-        btnDine.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-200 text-slate-600 transition-all";
+        btnDine.className = "py-2.5 text-sm font-semibold rounded-xl border border-slate-200 text-slate-600 bg-transparent transition-all";
         addressBlock.classList.remove('hidden');
       }
     }
